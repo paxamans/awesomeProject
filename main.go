@@ -19,11 +19,11 @@ var appTable *widget.Table
 
 func main() {
 	a := app.New()
-	w := a.NewWindow("Autostart App Manager")
+	w := a.NewWindow("awesomeAutostart")
 
 	w.Resize(fyne.NewSize(1300, 600))
 
-	nameLabel := widget.NewLabel("My Autostart Apps")
+	nameLabel := widget.NewLabel("My Autostart Apps:")
 	appTable = widget.NewTable(
 		func() (int, int) {
 			return len(getAutostartApps()), 1
@@ -75,7 +75,7 @@ func main() {
 
 			appPath := reader.URI().String()
 
-			err = AddAppToAutostart("Added app with Yocker", appPath)
+			err = AddAppToAutostart("Added app with awesomeAutostart", appPath)
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
