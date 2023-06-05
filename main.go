@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -19,7 +19,8 @@ var appTable *widget.Table
 
 func main() {
 	a := app.New()
-	w := a.NewWindow("awesomeAutostart")
+	w := a.NewWindow("Awesome")
+	w.SetIcon(loadIcon("saves/awesome_logo.png"))
 
 	w.Resize(fyne.NewSize(1300, 600))
 
@@ -36,18 +37,20 @@ func main() {
 			c.Objects = []fyne.CanvasObject{
 				widget.NewLabel(getAutostartApps()[tci.Row]),
 				container.NewHBox(
-					widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-						err := DeleteAppFromAutostart(getAutostartApps()[tci.Row])
+					widget.NewButtonWithIcon("", loadIcon("saves/delete_icon.png"), func() {
+						appName := strings.Split(getAutostartApps()[tci.Row], ": ")[0]
+						err := DeleteAppFromAutostart(appName)
 						if err != nil {
 							dialog.ShowError(err, w)
 							return
 						}
 						appTable.Refresh()
 					}),
-					widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+					widget.NewButtonWithIcon("", loadIcon("saves/edit_icon.png"), func() {
+						oldAppName := strings.Split(getAutostartApps()[tci.Row], ": ")[0]
 						entryDialog := dialog.NewEntryDialog("New name", "Enter new name for the app", func(newName string) {
 							if newName != "" {
-								err := RenameAppInAutostart(getAutostartApps()[tci.Row], newName)
+								err := RenameAppInAutostart(oldAppName, newName)
 								if err != nil {
 									dialog.ShowError(err, w)
 									return
@@ -61,7 +64,6 @@ func main() {
 			}
 		},
 	)
-
 	addButton := widget.NewButton("Add App", func() {
 		fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil {
@@ -75,7 +77,7 @@ func main() {
 
 			appPath := reader.URI().String()
 
-			err = AddAppToAutostart("Added app with awesomeAutostart", appPath)
+			err = AddAppToAutostart("Added app with Awesome", appPath)
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
@@ -87,9 +89,12 @@ func main() {
 		fileDialog.Show()
 	})
 
+	refreshButton := widget.NewButton("Refresh", func() {
+		appTable.Refresh()
+	})
 	content := container.NewBorder(
 		nameLabel,
-		addButton,
+		container.NewHBox(addButton, refreshButton),
 		nil,
 		nil,
 		container.NewMax(appTable),
@@ -97,6 +102,13 @@ func main() {
 
 	w.SetContent(content)
 	w.ShowAndRun()
+}
+func loadIcon(filename string) fyne.Resource {
+	icon, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fyne.NewStaticResource(filename, icon)
 }
 
 // AddAppToAutostart adds the given application to autostart on Windows
@@ -117,11 +129,18 @@ func AddAppToAutostart(appName, appPath string) error {
 
 // DeleteAppFromAutostart deletes the given application from autostart on Windows
 func DeleteAppFromAutostart(appName string) error {
-	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Run`, registry.SET_VALUE)
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Run`, registry.ALL_ACCESS)
 	if err != nil {
 		return err
 	}
 	defer k.Close()
+
+	_, _, err = k.GetStringValue(appName)
+	if err == registry.ErrNotExist {
+		return nil // If the key doesn't exist, there's nothing to delete
+	} else if err != nil {
+		return err
+	}
 
 	err = k.DeleteValue(appName)
 	if err != nil {
@@ -139,17 +158,7 @@ func RenameAppInAutostart(oldAppName, newAppName string) error {
 	}
 	defer k.Close()
 
-	value, _, err := k.GetStringValue(oldAppName)
-	if err != nil {
-		return err
-	}
-
-	err = k.DeleteValue(oldAppName)
-	if err != nil {
-		return err
-	}
-
-	err = k.SetStringValue(newAppName, value)
+	err = k.SetStringValue(oldAppName, newAppName)
 	if err != nil {
 		return err
 	}
@@ -179,7 +188,7 @@ func getAutostartApps() []string {
 			log.Println(err)
 			continue
 		}
-		apps[i] = strings.Join([]string{name, value}, ": ")
+		apps[i] = value
 	}
 
 	return apps
