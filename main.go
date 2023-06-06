@@ -173,25 +173,26 @@ func AddAppToAutostart(appPath string) error {
 
 // DeleteAppFromAutostart deletes the given application from autostart on Windows
 func DeleteAppFromAutostart(appName string) error {
+	// Try to delete from the registry
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Run`, registry.ALL_ACCESS)
+	if err == nil {
+		err = k.DeleteValue(appName)
+		if err != nil && err != registry.ErrNotExist {
+			k.Close()
+			return err
+		}
+		k.Close()
+	}
+
+	// Try to delete from the Startup folder
+	currentUser, err := user.Current()
 	if err != nil {
 		return err
 	}
-	defer k.Close()
 
-	// Get the path of the app
-	appPath, _, err := k.GetStringValue(appName)
-	if err != nil {
-		return err
-	}
-
-	// Check if the file exists
-	if _, err := os.Stat(appPath); os.IsNotExist(err) {
-		return fmt.Errorf("the file does not exist: %s", appPath)
-	}
-
-	err = k.DeleteValue(appName)
-	if err != nil {
+	startupPath := filepath.Join(currentUser.HomeDir, "AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup", appName+".lnk")
+	err = os.Remove(startupPath)
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
