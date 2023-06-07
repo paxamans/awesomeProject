@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/go-ole/go-ole"
 	"github.com/go-ole/go-ole/oleutil"
 	"golang.org/x/sys/windows/registry"
@@ -201,30 +200,39 @@ func DeleteAppFromAutostart(appName string) error {
 
 // RenameAppInAutostart renames the given application in autostart on Windows
 func RenameAppInAutostart(oldAppName, newAppName string) error {
+	// Try to rename in the registry
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Run`, registry.ALL_ACCESS)
+	if err == nil {
+		// Get the path of the old app
+		oldAppPath, _, err := k.GetStringValue(oldAppName)
+		if err == nil {
+			// Delete the old value
+			err = k.DeleteValue(oldAppName)
+			if err != nil {
+				k.Close()
+				return err
+			}
+
+			// Set the new value
+			err = k.SetStringValue(newAppName, oldAppPath)
+			if err != nil {
+				k.Close()
+				return err
+			}
+		}
+		k.Close()
+	}
+
+	// Try to rename in the Startup folder
+	currentUser, err := user.Current()
 	if err != nil {
 		return err
 	}
-	defer k.Close()
 
-	// Get the path of the old app
-	oldAppPath, _, err := k.GetStringValue(oldAppName)
-	if err != nil {
-		return err
-	}
-
-	// Check if the file exists
-	if _, err := os.Stat(oldAppPath); os.IsNotExist(err) {
-		return fmt.Errorf("the file does not exist: %s", oldAppPath)
-	}
-
-	err = k.DeleteValue(oldAppName)
-	if err != nil {
-		return err
-	}
-
-	err = k.SetStringValue(newAppName, oldAppPath)
-	if err != nil {
+	oldStartupPath := filepath.Join(currentUser.HomeDir, "AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup", oldAppName+".lnk")
+	newStartupPath := filepath.Join(currentUser.HomeDir, "AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup", newAppName+".lnk")
+	err = os.Rename(oldStartupPath, newStartupPath)
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
