@@ -2,15 +2,11 @@
 
 ## Description
 
-AAM is a GUI application designed to manage startup apps in Windows. With this application, you can easily control which apps start up when your Windows machine boots, helping to improve system performance and user experience.
+AAM is a GUI application designed to manage startup apps in Windows. With this application, you can easily control which apps start up when your Windows machine boots, helping to improve system performance and user experience. This is the initial Alpha version and is designed for my own usage.
 
 ## Usage
 
 ![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmE1YjMxMzI5ZGZiNzUwZDQ0MGZmZDkyZGM5N2FkNjY4NTM5YjM5MCZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/U8iMFtS32920OmMshz/giphy.gif)
-
-# Awesome Autostart Manager(AAM) Alpha PreRelease Notes
-
-  The AAM application is a new utility for managing autostart applications on Windows systems. This is the initial Alpha version and is designed for my own usage.
 
 ## Features
 
@@ -31,9 +27,25 @@ Being an alpha version, this application comes with some limitations:
 - More robust error handling and reporting.
 - Broad testing on various Windows configurations.
 
-We hope you enjoy using the alpha version of AAM and welcome any feedback you may have!
+## Usage
 
+- You can download .exe file directly from repo or build it yourself using powershell
 
+1. **Install Go [accordingly](https://go.dev/)**
+  
+2. **Clone repository and compile program:**
+
+   ```
+   git clone https://github.com/paxamans/awesomeProject
+   cd awesomeProject
+   go build -o executable.exe
+   ```
+3. **Run program if no errors ecountered:**
+
+   ```powershell
+   ./executable.exe
+   ```
+   
 ## Contributing
 
 Contributions to AAM are welcome! Please see our [Pull Request](https://github.com/paxamans/awesomeProject/pulls) page for more details.
