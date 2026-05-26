@@ -1,59 +1,72 @@
 # Awesome Autostart Manager (AAM)
 
-## Description
+A lightweight Windows GUI tool for managing which applications launch at startup. View, add, rename, and delete autostart entries — across both the **Windows Registry** and the **Startup folder** — from a single interface.
 
-AAM is a GUI application designed to manage startup apps in Windows. With this application, you can easily control which apps start up when your Windows machine boots, helping to improve system performance and user experience. This is the initial Alpha version and is designed for my own usage.
-
-## Usage
-
-![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmE1YjMxMzI5ZGZiNzUwZDQ0MGZmZDkyZGM5N2FkNjY4NTM5YjM5MCZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/U8iMFtS32920OmMshz/giphy.gif)
+![Demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmE1YjMxMzI5ZGZiNzUwZDQ0MGZmZDkyZGM5N2FkNjY4NTM5YjM5MCZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/U8iMFtS32920OmMshz/giphy.gif)
 
 ## Features
 
-- **Autostart Application Overview**: The main window displays a table of all applications set to autostart on your Windows system. This includes both applications registered in the registry under `Software\Microsoft\Windows\CurrentVersion\Run` and shortcuts placed in the user's Startup folder.
+- **View all autostart apps** — reads both `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` and the user's Startup folder, deduplicated into a single list.
+- **Add apps** — pick any `.exe` via a file dialog; a shortcut is created in the Startup folder automatically.
+- **Rename entries** — rename an autostart entry in both the registry and Startup folder at once.
+- **Delete entries** — remove an app from autostart (attempts both registry and Startup folder regardless of where it was added).
+- **Standalone binary** — all icons are embedded into the executable; no external files needed.
 
-- **Add Autostart Applications**: You can add new applications to the autostart list. The application lets you select an `.exe` file via a file dialog, which it then adds to your system's autostart settings.
+## Project Structure
 
-## Known Limitations
+```
+├── main.go          # App init, window creation
+├── ui.go            # GUI layout, table with cached app list
+├── autostart.go     # Windows autostart CRUD (registry + Startup folder)
+├── bundled.go       # Embedded PNG assets via //go:embed
+├── saves/           # Source icon files (not needed at runtime)
+├── go.mod
+└── go.sum
+```
 
-Being an alpha version, this application comes with some limitations:
+## Getting Started
 
-- The application has only been tested on a limited number of Windows configurations.
-- The functionality for technically everything may not work properly.
-- The GUI has been kept simple and lacks advanced user interface features.
+### Prerequisites
 
-## Future Developments
+- **Windows 10/11**
+- **[Go 1.23+](https://go.dev/dl/)** (for building from source)
+- A C compiler for CGo (required by Fyne) — [MSYS2 MinGW-w64](https://www.msys2.org/) or [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) work well
 
-- More robust error handling and reporting.
-- Broad testing on various Windows configurations.
+### Build & Run
 
-## Usage
+```powershell
+git clone https://github.com/paxamans/awesomeProject
+cd awesomeProject
+go build -o aam.exe
+./aam.exe
+```
 
-- You can download .exe file directly from repo or build it yourself using powershell
+The resulting `aam.exe` is fully portable — copy it anywhere and it will work without the `saves/` folder.
 
-1. **Install Go [accordingly](https://go.dev/)**
-  
-2. **Clone repository and compile program:**
+### Quick Check (no run)
 
-   ```
-   git clone https://github.com/paxamans/awesomeProject
-   cd awesomeProject
-   go build -o executable.exe
-   ```
-3. **Run program if no errors ecountered:**
+```powershell
+go vet ./...     # static analysis
+go build ./...   # compile check
+```
 
-   ```powershell
-   ./executable.exe
-   ```
-   
+## How It Works
+
+1. On launch, the app reads autostart entries from **two sources**:
+   - `.lnk` shortcuts in `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+   - Named values in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+2. Results are deduplicated and cached in memory — the registry/filesystem is only hit on startup or after you make a change.
+3. Adding an app creates a `.lnk` shortcut in the Startup folder via COM (`WScript.Shell`).
+4. Deleting or renaming attempts both locations, so it works regardless of where the entry was originally created.
+
 ## Contributing
 
-Contributions to AAM are welcome! Please see our [Pull Request](https://github.com/paxamans/awesomeProject/pulls) page for more details.
+Contributions welcome! See the [Pull Requests](https://github.com/paxamans/awesomeProject/pulls) page.
 
 ## Bug Reports
 
-If you encounter a problem with the software, please file a bug report [here](https://github.com/paxamans/awesomeProject/issues).
+Found a problem? [Open an issue](https://github.com/paxamans/awesomeProject/issues).
 
 ## Credits
 
-AAM is developed by [paxamans](https://github.com/paxamans).
+Built by [paxamans](https://github.com/paxamans).
