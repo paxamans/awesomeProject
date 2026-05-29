@@ -32,7 +32,9 @@ A lightweight Windows GUI tool for managing which applications launch at startup
 - **[Go 1.23+](https://go.dev/dl/)** (for building from source)
 - A C compiler for CGo (required by Fyne) — [MSYS2 MinGW-w64](https://www.msys2.org/) or [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) work well
 
-### Build & Run
+### Build & Run (Development)
+
+For quick local development testing:
 
 ```powershell
 git clone https://github.com/paxamans/awesomeProject
@@ -41,14 +43,44 @@ go build -o aam.exe
 ./aam.exe
 ```
 
-The resulting `aam.exe` is fully portable — copy it anywhere and it will work without the `saves/` folder.
+> [!NOTE]
+> Standard development builds will show a command prompt window in the background when running. For production deployment, use the production build instructions below.
 
-### Quick Check (no run)
+### Production Build & Deployment
+
+To deploy a clean, professional application, you want to compile with optimization flags, hide the background console window, embed custom icons, and automate your releases.
+
+#### 1. Quick Local Production Build
+Run the automated release script to clean, compile (without console window, optimized file size), and package the app with one click:
 
 ```powershell
-go vet ./...     # static analysis
-go build ./...   # compile check
+./build_release.ps1
 ```
+
+Or run the build manually with optimized linker flags:
+```powershell
+# Compiles with console window hidden (-H=windowsgui) and debugging symbols stripped (-s -w)
+go build -ldflags="-H=windowsgui -s -w" -o aam.exe
+```
+
+#### 2. Branded Packaging (Custom Icon & Manifest)
+To package the app with its custom branding/icon and a Windows application manifest so it displays beautifully in the Taskbar and Windows Explorer:
+
+```powershell
+go run fyne.io/fyne/v2/cmd/fyne@v2.3.5 package -os windows -icon saves/awesome_logo.png
+```
+
+#### 3. Automated CI/CD (GitHub Actions)
+This project comes with a preconfigured GitHub Actions workflow in `.github/workflows/release.yml`. 
+To build and deploy automatically:
+1. Push your repository to GitHub.
+2. When you are ready for a new release, tag your commit and push it:
+   ```powershell
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+3. GitHub Actions will spin up a Windows runner, install Go & GCC, compile optimized binaries, and automatically publish a **GitHub Release** with the portable executable and branded `.zip` installer!
+
 
 ## How It Works
 
